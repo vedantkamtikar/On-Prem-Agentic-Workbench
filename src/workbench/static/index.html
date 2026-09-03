@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sovereign On-Prem Agentic AI Workbench</title>
+    <link rel="stylesheet" href="/static/style.css?v=2">
+    <script>
+        // Immediate theme initialization to prevent flash
+        (function() {
+            try {
+                const saved = localStorage.getItem("workbench_theme") || "dark";
+                document.documentElement.setAttribute("data-theme", saved);
+            } catch(e) {}
+        })();
+    </script>
+</head>
+<body>
+    <!-- Top System Telemetry Bar (Permanent Header) -->
+    <header class="system-header">
+        <div class="header-left">
+            <div class="brand-title">SOVEREIGN WORKBENCH</div>
+        </div>
+        <div class="header-right">
+            <div class="telemetry-tag" id="badge-hardware">
+                <span>GPU MEM:</span>
+                <strong id="header-vram-text">0.0 / 6.0 GB</strong>
+            </div>
+            <div class="telemetry-tag" id="badge-router">
+                <span>ROUTER:</span>
+                <strong id="header-router-name">qwen3.5:0.8b (PINNED)</strong>
+            </div>
+            <div class="telemetry-tag tag-active" id="badge-worker">
+                <span>ACTIVE WORKER:</span>
+                <strong id="header-worker-name">qwen3.5:4b</strong>
+            </div>
+            <button type="button" class="theme-switch-btn" id="btn-theme-toggle" aria-label="Toggle Light/Dark Theme" title="Switch Theme (Dark / Light)">
+                <span class="theme-option active" id="opt-dark">DARK</span>
+                <span class="theme-option" id="opt-light">LIGHT</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Primary Navigation Bar (3 Clean Tabs) -->
+    <nav class="primary-nav" aria-label="Main Navigation">
+        <button class="nav-tab active" data-screen="screen-workspace" id="tab-workspace">
+            <span class="tab-idx">1.</span> Workspace
+        </button>
+        <button class="nav-tab" data-screen="screen-kb" id="tab-kb">
+            <span class="tab-idx">2.</span> Knowledge Base & SOPs
+        </button>
+        <button class="nav-tab" data-screen="screen-trust" id="tab-trust">
+            <span class="tab-idx">3.</span> System Trust & Audit
+        </button>
+    </nav>
+
+    <!-- Main Viewport -->
+    <main class="screen-viewport">
+
+        <!-- ==================================================================== -->
+        <!-- SCREEN 1: WORKSPACE (OPERATIONS HUB) -->
+        <!-- ==================================================================== -->
+        <section id="screen-workspace" class="screen-container active-screen">
+            <div class="layout-3col">
+                
+                <!-- Left Column: Task Input, Attachments & Inline OCR -->
+                <div class="pane pane-input">
+                    <div class="pane-header">
+                        <span class="pane-title">Task Specification</span>
+                        <span class="pane-meta">ReAct Loop (Ctrl+Enter)</span>
+                    </div>
+                    <div class="pane-body">
+                        <div class="form-group">
+                            <label class="form-label" for="task-prompt-input">Engineering Task / Directive:</label>
+                            <textarea id="task-prompt-input" class="input-control" placeholder="Specify inspection task, document drafting goal, or code script..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Task Presets (Fast Dispatch):</label>
+                            <div class="presets-grid">
+                                <button type="button" class="preset-btn" id="preset-incident">
+                                    <strong>SOP Compliance & Approval Note</strong><br>
+                                    Search local SOPs, verify specs and generate formal .docx
+                                </button>
+                                <button type="button" class="preset-btn" id="preset-ocr">
+                                    <strong>Optical Tag Inspection</strong><br>
+                                    CPU OCR extraction on drawing + Qwen2.5-VL visual analysis
+                                </button>
+                                <button type="button" class="preset-btn" id="preset-code">
+                                    <strong>Sandboxed Vibration Calculation</strong><br>
+                                    Execute safe code without network in container
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Enhanced Workspace File Attachment & Inline OCR Inspection -->
+                        <div class="form-group">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label class="form-label" for="task-file-select">Attached Workspace File / Drawing:</label>
+                                <span class="conf-pill conf-high" id="inline-ocr-status-pill" style="display:none;">OCR Ready</span>
+                            </div>
+                            
+                            <select id="task-file-select" class="input-control">
+                                <option value="">-- No file attached (Drag and drop file below) --</option>
+                            </select>
+
+                            <div class="dropzone" id="workspace-dropzone" tabindex="0" role="button" aria-label="Drop files here to upload locally">
+                                <input type="file" id="workspace-file-input" class="dropzone-file-input" accept=".txt,.csv,.png,.jpg,.jpeg,.pdf,.md,.docx">
+                                <div class="dropzone-content">
+                                    <span class="dropzone-text"><strong>Drag & drop drawing, document, or log</strong> or browse</span>
+                                    <span class="dropzone-sub">Uploads locally to data/uploads/ with auto CPU OCR</span>
+                                </div>
+                                <div class="dropzone-status" id="workspace-dropzone-status" style="display:none;"></div>
+                            </div>
+
+                            <!-- Inline Visual Thumbnail & OCR Preview Container -->
+                            <div id="workspace-preview-box" style="display: none; margin-top: 0.5rem; background: var(--surface-inset); border: 1px solid var(--border-hairline); border-radius: 3px; padding: 0.5rem; text-align: center;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                                    <span style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-secondary);" id="workspace-preview-filename">drawing.png</span>
+                                    <button type="button" class="btn btn-sm" id="btn-toggle-ocr-drawer" style="padding: 2px 8px; font-size: 0.7rem;">
+                                        Inspect OCR Tags (<span id="inline-ocr-tag-count">0</span>)
+                                    </button>
+                                </div>
+                                <img id="workspace-preview-img" alt="Attached Drawing Thumbnail" style="display: none; max-width: 100%; max-height: 140px; object-fit: contain; border-radius: 2px; border: 1px solid var(--border-hairline);">
+                            </div>
+
+                            <!-- Inline Collapsible OCR Inspection Drawer -->
+                            <div id="inline-ocr-drawer" style="display: none; margin-top: 0.4rem; background: var(--bg-canvas); border: 1px solid var(--border-hairline); border-radius: 3px; padding: 0.5rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                                    <strong style="font-size: 0.75rem; color: var(--text-primary);">Extracted Tags & Labels (Editable):</strong>
+                                    <button type="button" class="btn btn-sm btn-primary" id="btn-insert-ocr-tags" style="padding: 2px 6px; font-size: 0.68rem;">
+                                        Insert into Directive
+                                    </button>
+                                </div>
+                                <div style="max-height: 160px; overflow-y: auto;">
+                                    <table class="tech-table font-mono" id="inline-ocr-table" style="font-size: 0.72rem;">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 25px;">#</th>
+                                                <th>Tag / Text (Click to edit)</th>
+                                                <th style="width: 65px;">Conf</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="inline-ocr-tbody">
+                                            <tr>
+                                                <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 0.5rem;">No tags extracted yet.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Model Router Selection:</label>
+                            <select id="router-mode-select" class="input-control">
+                                <option value="auto">Auto-Route (0.8B Resident Classifier)</option>
+                                <option value="general">Force General Drafting (Qwen3.5-4B)</option>
+                                <option value="vision">Force Vision Specialist (Qwen2.5-VL-3B)</option>
+                                <option value="coding">Force Code Specialist (Qwen2.5-Coder-7B)</option>
+                            </select>
+                        </div>
+
+                        <button type="button" class="btn btn-primary" id="btn-dispatch-task">
+                            Execute Task Plan (Ctrl+Enter)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Center Column: Live Execution Trace & Response -->
+                <div class="pane">
+                    <div class="pane-header">
+                        <span class="pane-title">Agent Execution Trace</span>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <span class="pane-meta" id="trace-step-counter">Idle (0 Steps)</span>
+                            <button type="button" class="btn btn-sm" id="btn-clear-trace" title="Clear execution trace log" style="padding: 2px 8px; font-size: 0.7rem;">
+                                Clear Trace
+                            </button>
+                        </div>
+                    </div>
+                    <div class="pane-body">
+                        <div class="trace-log-container" id="trace-log">
+                            <div class="trace-line">
+                                <span class="trace-timer">[00:00.00]</span>
+                                <span class="trace-tag tag-router">SYSTEM</span>
+                                <span class="trace-msg">Sovereign On-Prem Agentic AI Workbench initialized. Ready for task intake.</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 0.5rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                                <label class="form-label" style="margin-bottom: 0;">Synthesized Deliverable / Executive Findings:</label>
+                                <button type="button" class="btn btn-sm" id="btn-copy-output" style="padding: 2px 8px; font-size: 0.7rem;">
+                                    Copy Output
+                                </button>
+                            </div>
+                            <textarea id="task-output-preview" class="input-control" style="min-height: 380px; height: 380px; font-size: 0.85rem; line-height: 1.6; resize: vertical;" readonly placeholder="Execution findings, root cause analysis, and tool outputs will appear here..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Active Deliverable & Real-Time Archive -->
+                <div class="pane col-third">
+                    <div class="pane-header">
+                        <span class="pane-title">Active Deliverable</span>
+                        <span class="pane-meta" id="deliverable-status-tag">Status: Idle</span>
+                    </div>
+                    <div class="pane-body">
+                        <!-- Current Run Active Deliverable Card -->
+                        <div id="deliverable-active-card" style="background: var(--bg-canvas); border: 1px solid var(--border-hairline); padding: 0.75rem; border-radius: 3px;">
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Current Deliverable:</div>
+                            <strong id="deliverable-filename" style="color: var(--text-primary); font-family: var(--font-mono); font-size: 0.85rem;">No deliverable generated</strong>
+                            <div style="margin-top: 0.4rem; font-size: 0.75rem; color: var(--text-secondary);">
+                                Format: <span id="deliverable-format">None</span><br>
+                                Size: <span id="deliverable-size">—</span>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+                            <a href="#" download class="btn btn-primary" id="btn-download-deliverable" style="display: none;">
+                                Download Deliverable
+                            </a>
+                        </div>
+
+                        <!-- Real-Time Deliverables History & Archive from output/ -->
+                        <div style="border-top: 1px solid var(--border-hairline); padding-top: 0.75rem; margin-top: 0.5rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div class="form-label" style="margin-bottom: 0;">Deliverables Archive (output/):</div>
+                                <button type="button" class="btn btn-sm" id="btn-refresh-history" style="padding: 1px 6px; font-size: 0.68rem;">Refresh</button>
+                            </div>
+                            <div class="table-container" style="margin-top: 0.35rem; max-height: 180px; overflow-y: auto;">
+                                <table class="tech-table font-mono" id="deliverables-history-table" style="font-size: 0.72rem;">
+                                    <thead>
+                                        <tr>
+                                            <th>File</th>
+                                            <th style="width: 50px;">Size</th>
+                                            <th style="width: 65px; text-align: right;">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="deliverables-history-tbody">
+                                        <tr>
+                                            <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 1.5rem 0.5rem;">
+                                                Loading archive...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid var(--border-hairline); padding-top: 0.6rem;">
+                            <div class="form-label" style="margin-bottom: 0.3rem;">Grounded Knowledge Base Scope:</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">
+                                Local vector store at <code>data/kb/</code> on CPU.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==================================================================== -->
+        <!-- SCREEN 2: KNOWLEDGE BASE & SOP LIBRARY -->
+        <!-- ==================================================================== -->
+        <section id="screen-kb" class="screen-container">
+            <div class="layout-split-left">
+                
+                <!-- Left: Procedure Index -->
+                <div class="pane pane-input">
+                    <div class="pane-header">
+                        <span class="pane-title">On-Prem SOP Index</span>
+                        <span class="pane-meta" id="kb-doc-meta">Knowledge Base Index</span>
+                    </div>
+                    <div class="pane-body">
+                        <div class="form-group">
+                            <label class="form-label" for="kb-search-input">Search Knowledge Base:</label>
+                            <input type="text" id="kb-search-input" class="input-control" placeholder="e.g. valve torque specification, turning gear, pump head...">
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button type="button" class="btn btn-primary" id="btn-run-kb-search">
+                                Search Index (CPU Vector)
+                            </button>
+                            <button type="button" class="btn" id="btn-reindex-kb" title="Re-scan data/kb/ directory and rebuild index">
+                                Re-Index
+                            </button>
+                        </div>
+
+                        <div class="form-label" style="margin-top: 0.75rem;">Indexed Documents in data/kb/:</div>
+                        <div class="table-container">
+                            <table class="tech-table">
+                                <thead>
+                                    <tr>
+                                        <th>Document</th>
+                                        <th>Size / Chunks</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="kb-docs-tbody">
+                                    <tr>
+                                        <td colspan="2" style="text-align: center; color: var(--text-muted); padding: 1.5rem 0.5rem;">
+                                            Place your .md, .txt, or .pdf files into <code>data/kb/</code> and click 'Re-Index'.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Grounded Semantic Search Results -->
+                <div class="pane">
+                    <div class="pane-header">
+                        <span class="pane-title">Grounded Search Results & Procedural Excerpts</span>
+                        <span class="pane-meta" id="kb-results-meta">Awaiting Query</span>
+                    </div>
+                    <div class="pane-body" id="kb-results-container">
+                        <div style="text-align: center; color: var(--text-muted); padding: 3rem 1rem;" id="kb-search-empty">
+                            <strong>No Search Performed</strong>
+                            <div style="font-size: 0.75rem; margin-top: 0.35rem;">Enter a query on the left to perform CPU vector similarity search across your on-prem documents.</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ==================================================================== -->
+        <!-- SCREEN 3: SYSTEM TRUST & HARDWARE AUDIT -->
+        <!-- ==================================================================== -->
+        <section id="screen-trust" class="screen-container">
+            <div class="layout-3col">
+                
+                <!-- Column 1: Hardware Budget Telemetry -->
+                <div class="pane">
+                    <div class="pane-header">
+                        <span class="pane-title">Hardware Memory Budget & Telemetry</span>
+                        <span class="pane-meta">Target: RTX 4050 6GB</span>
+                    </div>
+                    <div class="pane-body">
+                        <div class="gauge-box">
+                            <div class="gauge-header">
+                                <span class="form-label">GPU VRAM Utilization:</span>
+                                <strong id="gauge-vram-text" class="font-mono">0.0 GB / 6.0 GB (0%)</strong>
+                            </div>
+                            <div class="gauge-bar-bg">
+                                <div class="gauge-bar-fill" id="gauge-vram-bar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="gauge-box">
+                            <div class="gauge-header">
+                                <span class="form-label">System RAM Utilization:</span>
+                                <strong id="gauge-ram-text" class="font-mono">0.0 GB / 24.0 GB (0%)</strong>
+                            </div>
+                            <div class="gauge-bar-bg">
+                                <div class="gauge-bar-fill fill-green" id="gauge-ram-bar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid var(--border-hairline); padding-top: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                            <div class="form-label">Hardware Invariant Verifications:</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">
+                                - <strong>OCR Invariant:</strong> CPU-Only<br>
+                                - <strong>Embedding Invariant:</strong> CPU-Only<br>
+                                - <strong>Sandbox Isolation:</strong> Docker <code>--network none</code><br>
+                                - <strong>Resident Cap:</strong> Max 1 Worker + 0.8B Router in VRAM
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn" id="btn-refresh-hardware" style="margin-top: auto;">
+                            Refresh Hardware Telemetry
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Column 2: Model Registry Residency -->
+                <div class="pane">
+                    <div class="pane-header">
+                        <span class="pane-title">Model Residency & Swapping Pool</span>
+                        <span class="pane-meta">Ollama Serving Engine</span>
+                    </div>
+                    <div class="pane-body">
+                        <div style="background: var(--bg-canvas); border: 1px solid var(--trust-green); padding: 0.65rem; border-radius: 3px;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <strong style="color: #34d399;">qwen3.5:0.8b</strong>
+                                <span class="conf-pill conf-high">PINNED RESIDENT</span>
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                                Role: Dynamic Task Classifier & Router<br>
+                                Memory: 100% GPU VRAM (~1.0 GB) | Keep-Alive: 24h
+                            </div>
+                        </div>
+
+                        <div style="background: var(--bg-canvas); border: 1px solid var(--border-hairline); border-left: 3px solid var(--accent-blueprint); padding: 0.65rem; border-radius: 3px;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <strong style="color: var(--text-primary);">qwen2.5vl:3b</strong>
+                                <span class="conf-pill conf-high">VISION SPECIALIST</span>
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                                Role: Multimodal Vision, P&ID & Engineering Drawings<br>
+                                Memory: GPU VRAM (~3.2 GB) | Keep-Alive: 30m
+                            </div>
+                        </div>
+
+                        <div style="background: var(--bg-canvas); border: 1px solid var(--border-hairline); border-left: 3px solid var(--accent-blueprint); padding: 0.65rem; border-radius: 3px;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <strong style="color: var(--text-primary);">qwen3.5:4b</strong>
+                                <span class="conf-pill conf-high">ACTIVE WORKER</span>
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                                Role: General Reasoning, Technical Drafting & Synthesis<br>
+                                Memory: GPU VRAM (~3.4 GB) | Keep-Alive: 30m
+                            </div>
+                        </div>
+
+                        <div style="background: var(--bg-canvas); border: 1px solid var(--border-hairline); padding: 0.65rem; border-radius: 3px;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <strong style="color: var(--text-secondary);">qwen2.5-coder:7b</strong>
+                                <span style="font-size: 0.7rem; color: var(--text-muted); font-family: var(--font-mono);">STANDBY POOL</span>
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">
+                                Role: Code Specialist & Script Synthesis<br>
+                                Status: Ready for swap on demand
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Column 3: Live Socket Audit Trail -->
+                <div class="pane col-third">
+                    <div class="pane-header">
+                        <span class="pane-title">Live Network Socket Audit Trail</span>
+                        <span class="pane-meta" id="audit-compliance-tag" style="color: #34d399;">100% Loopback</span>
+                    </div>
+                    <div class="pane-body">
+                        <div class="table-container">
+                            <table class="tech-table font-mono" id="network-sockets-table">
+                                <thead>
+                                    <tr>
+                                        <th>Protocol</th>
+                                        <th>Local Address</th>
+                                        <th>Remote Address</th>
+                                        <th>Classification</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="network-sockets-tbody">
+                                    <tr>
+                                        <td>TCP</td>
+                                        <td>127.0.0.1:8000</td>
+                                        <td>127.0.0.1:11434</td>
+                                        <td><span class="conf-pill conf-high">LOOPBACK</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>TCP</td>
+                                        <td>127.0.0.1:54589</td>
+                                        <td>127.0.0.1:54588</td>
+                                        <td><span class="conf-pill conf-high">LOOPBACK</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div style="background: var(--trust-green-bg); border: 1px solid var(--trust-green); padding: 0.65rem; border-radius: 3px; font-size: 0.75rem; color: #34d399;">
+                            <strong>AIR-GAP CERTIFICATION: ACTIVE</strong><br>
+                            External WAN Calls: <strong>0</strong> | DNS Leaks: <strong>0</strong><br>
+                            All intelligence and embedding processing is strictly on-prem.
+                        </div>
+
+                        <button type="button" class="btn" id="btn-refresh-audit">
+                            Run Live Socket Scan
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <script src="/static/app.js?v=2"></script>
+</body>
+</html>

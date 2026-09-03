@@ -1,0 +1,73 @@
+# Sovereign On-Prem Agentic AI Workbench - Model Registry
+# Single source of truth for model definitions, endpoints, context limits, and task mappings.
+# Adding/modifying models here takes effect without code modifications.
+
+models:
+  router:
+    name: "qwen3.5:0.8b"
+    endpoint: "http://localhost:11434"
+    context_window: 32768
+    modality:
+      - "text"
+    keep_alive: "24h"         # Stays resident in memory
+    role: "classifier"
+    task_types:
+      - "routing"
+      - "classification"
+    description: "Lightweight task classifier — always resident in memory"
+
+  general:
+    name: "qwen3.5:4b"
+    endpoint: "http://localhost:11434"
+    context_window: 32768
+    modality:
+      - "text"
+    keep_alive: "30m"         # Cached in RAM across swaps
+    role: "worker"
+    task_types:
+      - "drafting"
+      - "summarization"
+      - "analysis"
+      - "general"
+      - "document_processing"
+    description: "General reasoning, technical drafting, and document synthesis"
+
+  vision:
+    name: "qwen2.5vl:3b"
+    endpoint: "http://localhost:11434"
+    context_window: 32768
+    modality:
+      - "text"
+      - "image"
+    keep_alive: "30m"         # Cached in RAM across swaps
+    role: "worker"
+    task_types:
+      - "vision"
+      - "diagram_analysis"
+      - "ocr_inspection"
+      - "visual_qa"
+      - "schematic"
+      - "p_and_id"
+    description: "Specialized multimodal vision-language model for engineering drawings, schematics, and P&ID diagrams"
+
+  coding:
+    name: "qwen2.5-coder:7b"
+    endpoint: "http://localhost:11434"
+    context_window: 32768
+    modality:
+      - "text"
+    keep_alive: "30m"         # Cached in RAM across swaps
+    role: "worker"
+    task_types:
+      - "coding"
+      - "debugging"
+      - "code_review"
+      - "scripting"
+      - "data_analysis_code"
+    description: "Specialized code generation & refactoring worker"
+
+defaults:
+  fallback_model: "general"
+  router_model: "router"
+  swap_timeout_seconds: 120
+  max_concurrent_models: 2     # router + one active worker

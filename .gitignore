@@ -1,0 +1,31 @@
+﻿# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caches and test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environments
+.env
+.venv/
+venv/
+ENV/
+env/
+
+# Scratch & temporary runtime files
+scratch/*
+!scratch/.gitkeep
+
+# Output deliverables (keep guide and gitkeep)
+output/*.docx
+output/*.xlsx
+output/*.pptx
+!output/Presentation_Guide_Sovereign_Workbench.md
+
+# OS specific files
+.DS_Store
+Thumbs.db
+desktop.ini
